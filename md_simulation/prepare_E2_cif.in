@@ -1,0 +1,16 @@
+source leaprc.protein.ff14SB
+
+# Load additional amino acid libraries
+loadOff aminoct12.lib
+loadOff aminont12.lib
+
+# Load the converted PDB file
+mol = loadpdb /home/alexb/Desktop/final/Modele/E2-n_m_c_f.pdb
+
+# Save topology and coordinates
+saveamberparm mol E2_test.prmtop E2_test.rst7
+
+# Save PDB for visualization
+savepdb mol E2_test_prepared.pdb
+
+quit

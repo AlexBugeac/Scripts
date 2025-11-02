@@ -1,0 +1,3 @@
+source leaprc.protein.ff14SB
+mol = loadpdb /home/alexb/Desktop/final/Modele/E2-n.pdb
+quit
