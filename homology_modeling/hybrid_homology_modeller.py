@@ -49,10 +49,11 @@ class RegionPreference:
 class HybridAutoModel(AutoModel):
     """Custom AutoModel class for hybrid modeling with region preferences"""
     
-    def __init__(self, env, alnfile, knowns, sequence, assess_methods=(), 
-                 region_preferences=None, **kwargs):
+    def __init__(self, env, alnfile, knowns, sequence, assess_methods=(),
+                 region_preferences=None, residue_offset=0, **kwargs):
         super().__init__(env, alnfile, knowns, sequence, assess_methods, **kwargs)
         self.region_preferences = region_preferences or []
+        self._residue_offset    = residue_offset
     
     def select_atoms(self):
         """Select atoms for optimization - can be customized for specific regions"""
@@ -71,8 +72,9 @@ class HybridAutoModel(AutoModel):
             logger.info(f"  Weighting {pref.preferred_template} (factor {pref.weight}) for region {pref.start_residue}-{pref.end_residue}")
             
             # Map original residue numbers to model residue numbers (1-based)
-            start_model_res = pref.start_residue - 383  # Target starts at 384, model at 1
-            end_model_res = pref.end_residue - 383
+            # offset = (template_first_resnum - 1); pass via --residue-offset
+            start_model_res = pref.start_residue - self._residue_offset
+            end_model_res   = pref.end_residue   - self._residue_offset
             
             logger.info(f"    Model residues: {start_model_res}-{end_model_res}")
             
@@ -432,6 +434,9 @@ Examples:
                        help='Enable model quality assessment')
     parser.add_argument('--region-preferences', type=str,
                        help='Region-specific template preferences (format: start-end:template:weight)')
+    parser.add_argument('--residue-offset', type=int, default=0,
+                       help='Subtract this from region residue numbers to get 1-based model numbering '
+                            '(e.g. 383 if your template starts at residue 384)')
     parser.add_argument('--verbose', type=int, default=1, choices=[0, 1, 2],
                        help='Verbosity level: 0=silent, 1=normal, 2=verbose (default: 1)')
     
@@ -447,7 +452,8 @@ Examples:
             template_files=args.templates,
             output_dir=args.output,
             region_preferences=region_preferences,
-            num_models=args.num_models
+            num_models=args.num_models,
+            residue_offset=args.residue_offset,
         )
         
         # Run modeling

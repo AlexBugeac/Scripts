@@ -27,9 +27,10 @@ def parse_ss_pairs(pairs):
 
 # ---------- Custom modeller ----------
 class CombinedSSModel(AutoModel):
-    def __init__(self, *args, ss_pairs=None, copy_template_ss=True, **kwargs):
+    def __init__(self, *args, ss_pairs=None, repel_pairs=None, copy_template_ss=True, **kwargs):
         super().__init__(*args, **kwargs)
         self._ss_pairs = ss_pairs or []
+        self._repel_pairs = repel_pairs or []
         self._copy_template_ss = copy_template_ss
 
     def special_patches(self, aln):
@@ -57,14 +58,13 @@ class CombinedSSModel(AutoModel):
                 print(f"⚠️ Could not add DISU {ra}–{rb}: {e}")
 
     def special_restraints(self, aln):
-        """Remove unwanted disulfides *after* patch_ss_templates() to ensure they are gone."""
-        unwanted_pairs = [("A", 46, "A", 120)]
-        for c1, r1, c2, r2 in unwanted_pairs:
+        """Remove unwanted disulfides after patch_ss_templates() — controlled via --repel flag."""
+        for c1, r1, c2, r2 in self._repel_pairs:
             try:
                 resA = self.residues[f"{r1}:{c1}"]
                 resB = self.residues[f"{r2}:{c2}"]
                 self.unpatch('DISU', residues=(resA, resB))
-                print(f"🚫 Removed unwanted DISU {r1}:{c1}–{r2}:{c2} after template patching.")
+                print(f"Removed unwanted DISU {r1}:{c1}–{r2}:{c2} after template patching.")
             except Exception:
                 pass
 
@@ -79,11 +79,14 @@ def main():
     p.add_argument("--out_prefix", default=None, help="Prefix for output files")
     p.add_argument("--out_dir", default=".", help="Output directory")
     p.add_argument("--ss", action="append", default=[], help="User-specified disulfides (A:45-A:102 format)")
+    p.add_argument("--repel", action="append", default=[], metavar="A:R1-A:R2",
+                   help="Remove this DISU after template patching, e.g. A:46-A:120")
     p.add_argument("--no_copy_template_ss", action="store_true", help="Skip copying template disulfides")
     args = p.parse_args()
 
     try:
-        ss_pairs = parse_ss_pairs(args.ss) if args.ss else []
+        ss_pairs    = parse_ss_pairs(args.ss)    if args.ss    else []
+        repel_pairs = parse_ss_pairs(args.repel) if args.repel else []
     except ValueError as e:
         print(e)
         sys.exit(2)
@@ -112,6 +115,7 @@ def main():
                         knowns=args.knowns,
                         sequence=args.sequence,
                         ss_pairs=ss_pairs,
+                        repel_pairs=repel_pairs,
                         copy_template_ss=(not args.no_copy_template_ss))
 
     if args.out_prefix:

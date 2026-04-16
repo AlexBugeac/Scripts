@@ -5,13 +5,7 @@ import os
 from pathlib import Path
 import sys
 
-# ===========================================================
-# ABSOLUTE OUTPUT ROOT (FIXED)
-# ===========================================================
-SIMULATION_ROOT = Path(
-    "/home/alexb/Desktop/E2_HCV_REDO/Simulation_files"
-).resolve()
-SIMULATION_ROOT.mkdir(parents=True, exist_ok=True)
+# SIMULATION_ROOT is set from --output-root CLI arg (see main())
 
 # ===========================================================
 # Import pipeline modules (UNCHANGED)
@@ -146,12 +140,19 @@ def process_single_pdb(input_pdb, ph, cli_ssbonds, trim_ranges, min_steps):
 # ===========================================================
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("input_path", help="MODELLER Models directory")
+    p.add_argument("input_path", help="Directory containing input PDB files")
+    p.add_argument("--output-root", default=None,
+                   help="Root output directory (default: same directory as input_path)")
     p.add_argument("--ph", type=float, default=7.4)
     p.add_argument("--ssbond", nargs="+", type=int)
     p.add_argument("--trim", nargs="+")
     p.add_argument("--min_steps", type=int, default=5000)
     a = p.parse_args()
+
+    global SIMULATION_ROOT
+    SIMULATION_ROOT = Path(a.output_root).resolve() if a.output_root \
+                      else Path(a.input_path).resolve()
+    SIMULATION_ROOT.mkdir(parents=True, exist_ok=True)
 
     root = Path(a.input_path).resolve()
     pdbs = [

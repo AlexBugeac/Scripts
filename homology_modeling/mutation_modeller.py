@@ -10,9 +10,6 @@ import argparse
 import logging
 from pathlib import Path
 
-# Add MODELLER to path
-sys.path.append('/home/alexb/miniconda3/envs/modeller/lib/modeller-10.7/modlib')
-
 from modeller import *
 from modeller.automodel import *
 from modeller.selection import Selection
